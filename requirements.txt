@@ -5,7 +5,7 @@ google-search-results
 httpx[http2]
 Python-IO
 Pillow
-openai
+openai==0.28
 tqdm
 pre-commit
 gpytranslate
@@ -22,3 +22,5 @@ ntgcalls>=1.0.2
 psutil
 screeninfo
 aiofiles
+g4f
+google-generativeai

@@ -17,8 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>
 
+from typing import List, Optional, Union
+
 import requests
-from typing import Optional, Union, List
+
 
 class SibylBan:
     def __init__(self, api_key: str = None):
@@ -30,21 +32,25 @@ class SibylBan:
             "api-key": self.api_key
         }
         try:
-            response = requests.request(method, url, headers=headers, params=params, json=json_data)
+            response = requests.request(
+                method, url, headers=headers, params=params, json=json_data
+            )
             return response.json()
         except requests.RequestException:
             pass
 
-    def add_ban(self, user_id: int=None, reason: str=None, is_banned: bool = False) -> str:
+    def add_ban(self, user_id: int = None, reason: str = None, is_banned: bool = False) -> str:
         if is_banned:
-            url = "https://randydev-ryuzaki-api.hf.space/sibylban"
+            url = "https://randydev-ryuzaki-api.hf.space/ryuzaki/sibylban"
             payload = {"user_id": user_id, "reason": reason}
             response = self._make_request("POST", url, json_data=payload)
-            return response.get("randydev", {}).get("message", response.get("message", "Unknown error"))
+            return response.get("randydev", {}).get(
+                "message", response.get("message", "Unknown error")
+            )
         else:
             raise ValueError("Error: is_banned must be True")
 
-    def get_ban(self, user_id: int=None, banlist: bool = False) -> Union[dict, str]:
+    def get_ban(self, user_id: int = None, banlist: bool = False) -> Union[dict, str]:
         if banlist:
             url = "https://randydev-ryuzaki-api.hf.space/ryuzaki/sibyl"
             payload = {"user_id": user_id}
@@ -52,7 +58,7 @@ class SibylBan:
         else:
             raise ValueError("Error: banlist must be True")
 
-    def unban_del(self, user_id: int=None, delete: bool = False) -> Union[dict, str]:
+    def unban_del(self, user_id: int = None, delete: bool = False) -> Union[dict, str]:
         if delete:
             url = "https://randydev-ryuzaki-api.hf.space/ryuzaki/sibyldel"
             payload = {"user_id": user_id}
@@ -62,4 +68,37 @@ class SibylBan:
 
     def get_all_banlist(self) -> Union[dict, str]:
         url = "https://randydev-ryuzaki-api.hf.space/ryuzaki/getbanlist"
+        return self._make_request("GET", url)
+###########################################################################################################
+#UFoP SPAMWATCH
+###########################################################################################################
+    def add_ufop_ban(self, user_id: int=None, reason: str=None, is_banned: bool = False) -> str:
+        if is_banned:
+            url = "https://ufoptg-ufop-api.hf.space/UFoP/banner"
+            payload = {"user_id": user_id, "reason": reason}
+            response = self._make_request("POST", url, json_data=payload)
+            return response.get("randydev", {}).get(
+                "message", response.get("message", "Unknown error")
+            )
+        else:
+            raise ValueError("Error: is_banned must be True")
+
+    def get_ufop_ban(self, user_id: int=None, banlist: bool = False) -> Union[dict, str]:
+        if banlist:
+            url = "https://ufoptg-ufop-api.hf.space/UFoP/bans"
+            payload = {"user_id": user_id}
+            return self._make_request("GET", url, params=payload)
+        else:
+            raise ValueError("Error: banlist must be True")
+
+    def ufopunban_del(self, user_id: int=None, delete: bool = False) -> Union[dict, str]:
+        if delete:
+            url = "https://ufoptg-ufop-api.hf.space/UFoP/bandel"
+            payload = {"user_id": user_id}
+            return self._make_request("DELETE", url, json_data=payload)
+        else:
+            raise ValueError("Error: delete must be True")
+
+    def get_ufop_banlist(self) -> Union[dict, str]:
+        url = "https://ufoptg-ufop-api.hf.space/UFoP/getbanlist"
         return self._make_request("GET", url)
