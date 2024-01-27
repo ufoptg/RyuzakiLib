@@ -52,7 +52,7 @@ class GeminiLatest:
 #############################----Oracle----##################################
     async def __get_response_gemini(self, query: str = None):
         try:
-            gemini_chat = self._get_gemini_chat_from_db()
+            gemini_chat = await self._get_gemini_chat_from_db()
             gemini_chat.append({"role": "user", "parts": [{"text": query}]})
             api_method = f"{self.api_base}/{self.version}/{self.model}:{self.content}?key={self.api_key}"
             headers = {"Content-Type": "application/json"}
@@ -93,11 +93,11 @@ class GeminiLatest:
     async def __get_response_oracle(self, query: str = None):
         try:
             oracle_chat = self._get_oracle_chat_from_db()
-            if self._check_oracle_chat__db():
+            if await self._check_oracle_chat__db():
                 oracle_chat.append({"role": "user", "parts": [{"text": query}]})
             else:
                 oracle_chat.append({"role": "user", "parts": [{"text": self.oracle_base + f"\n\n" + query}]})
-            self._set_oracle_chat_in_db(oracle_chat)
+            await self._set_oracle_chat_in_db(oracle_chat)
             api_method = f"{self.api_base}/{self.version}/{self.model}:{self.content}?key={self.api_key}"
             headers = {"Content-Type": "application/json"}
             payload = {"contents": oracle_chat}
@@ -122,16 +122,16 @@ class GeminiLatest:
                     response_data = response.json()
                     answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                     oracle_chat.append({"role": "model", "parts": [{"text": answer}]})
-                    self._update_oracle_chat_in_db(oracle_chat)
+                    await self._update_oracle_chat_in_db(oracle_chat)
                     return answer, oracle_chat
                 except Exception as e:
                     error_msg = f"Error response: {e}"
                     return error_msg, oracle_chat
                 else:
-                    self._clear_oracle_history_in_db()
+                    await self._clear_oracle_history_in_db()
             else:
                 oracle_chat.append({"role": "model", "parts": [{"text": answer}]})
-                self._update_oracle_chat_in_db(oracle_chat)
+                await self._update_oracle_chat_in_db(oracle_chat)
                 return answer, oracle_chat
         except Exception as e:
             error_msg = f"Error response: {e}"
