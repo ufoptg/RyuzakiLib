@@ -49,7 +49,7 @@ class GeminiLatest:
 
     def _close(self):
         self.client.close()
-#############################----Oracle----##################################
+
     async def __get_response_gemini(self, query: str = None):
         try:
             gemini_chat = await self._get_gemini_chat_from_db()
@@ -67,7 +67,7 @@ class GeminiLatest:
             answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
 
             gemini_chat.append({"role": "model", "parts": [{"text": answer}]})
-            self._update_gemini_chat_in_db(gemini_chat)
+            await self._update_gemini_chat_in_db(gemini_chat)
             return answer, gemini_chat
         except Exception as e:
             error_msg = f"Error response: {e}"
@@ -89,7 +89,7 @@ class GeminiLatest:
     async def _clear_history_in_db(self):
         unset_clear = {"gemini_chat": None}
         return self.collection.update_one({"user_id": self.user_id}, {"$unset": unset_clear})
-
+#############################----Oracle----##################################
     async def __get_response_oracle(self, query: str = None):
         try:
             oracle_chat = await self._get_oracle_chat_from_db()
@@ -111,7 +111,6 @@ class GeminiLatest:
             answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
 
             if "I am a large language model, trained by Google." in answer:
-                await asyncio.sleep(3)
                 answer = None
                 headers = {"Content-Type": "application/json"}
                 payload = {"contents": self.oracle_base}
