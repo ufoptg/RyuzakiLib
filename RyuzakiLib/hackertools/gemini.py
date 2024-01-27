@@ -95,7 +95,7 @@ class GeminiLatest:
         try:
             oracle_chat = await self._get_oracle_chat_from_db()
 
-        # Check if the oracle chat is present in the database
+            # Check if the oracle chat is present in the database
             if await self._check_oracle_chat__db():
                 oracle_chat.append({"role": "user", "parts": [{"text": query}]})
             else:
@@ -115,35 +115,35 @@ class GeminiLatest:
             response_data = response.json()
             answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
 
-            # Check if the specific string is present in the answer
+             # Check if the specific string is present in the answer
             if "I am a large language model, trained by Google." in answer:
                 # If the string is present, make a new request with a modified payload
                 headers = {"Content-Type": "application/json"}
                 payload = {"contents": [{"role": "user", "parts": [{"text": self.oracle_base}]}]}
                 response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
 
-            if response.status_code != 200:
-                return "Error responding", oracle_chat
+                if response.status_code != 200:
+                    return "Error responding", oracle_chat
 
-            try:
-                response_data = response.json()
-                answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                try:
+                    response_data = response.json()
+                    answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    oracle_chat.append({"role": "model", "parts": [{"text": answer}]})
+                    await self._update_oracle_chat_in_db(oracle_chat)
+                    return answer, oracle_chat
+                except Exception as e:
+                    await self._clear_oracle_history_in_db()
+                    error_msg = f"Error response: {e}"
+                    return error_msg, oracle_chat
+            else:
+                # If the specific string is not present, proceed as usual
                 oracle_chat.append({"role": "model", "parts": [{"text": answer}]})
                 await self._update_oracle_chat_in_db(oracle_chat)
                 return answer, oracle_chat
-            except Exception as e:
-                await self._clear_oracle_history_in_db()
-                error_msg = f"Error response: {e}"
-                return error_msg, oracle_chat
-        else:
-            # If the specific string is not present, proceed as usual
-            oracle_chat.append({"role": "model", "parts": [{"text": answer}]})
-            await self._update_oracle_chat_in_db(oracle_chat)
-            return answer, oracle_chat
-    except Exception as e:
-        await self._clear_oracle_history_in_db()
-        error_msg = f"Error response: {e}"
-        return error_msg, oracle_chat
+        except Exception as e:
+            await self._clear_oracle_history_in_db()
+            error_msg = f"Error response: {e}"
+            return error_msg, oracle_chat
 
     async def _get_oracle_chat_from_db(self):
         get_data_user = {"user_id": 6000000 + self.user_id}
