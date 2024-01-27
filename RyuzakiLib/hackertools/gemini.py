@@ -92,7 +92,7 @@ class GeminiLatest:
 
     async def __get_response_oracle(self, query: str = None):
         try:
-            oracle_chat = self._get_oracle_chat_from_db()
+            oracle_chat = await self._get_oracle_chat_from_db()
             if await self._check_oracle_chat__db():
                 oracle_chat.append({"role": "user", "parts": [{"text": query}]})
             else:
