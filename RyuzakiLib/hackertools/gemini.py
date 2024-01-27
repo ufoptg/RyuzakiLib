@@ -18,7 +18,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
-
 import requests
 from pymongo import MongoClient
 
@@ -98,9 +97,8 @@ class GeminiLatest:
             if await self._check_oracle_chat__db():
                 oracle_chat.append({"role": "user", "parts": [{"text": query}]})
             else:
+                await self._set_oracle_chat_in_db(oracle_chat)
                 oracle_chat.append({"role": "user", "parts": [{"text": self.oracle_base + f"\n\n" + query}]})
-
-            await self._set_oracle_chat_in_db(oracle_chat)
 
             api_method = f"{self.api_base}/{self.version}/{self.model}:{self.content}?key={self.api_key}"
             headers = {"Content-Type": "application/json"}
