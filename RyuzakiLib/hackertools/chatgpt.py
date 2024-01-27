@@ -22,6 +22,7 @@ import json
 import os
 from base64 import b64decode as idk
 
+import aiohttp
 import requests
 from pyrogram import Client, filters
 from pyrogram.types import Message
@@ -181,7 +182,7 @@ class RendyDevChat:
         else:
             return "you can check set is_list_all=True"
 
-    def get_response_gemini_oracle(
+    async def get_response_gemini_oracle(
         self,
         api_key: str = None,
         user_id: int = None,
@@ -202,18 +203,19 @@ class RendyDevChat:
             "is_multi_chat": is_multi_chat,
             "gemini_api_key": gemini_api_key,
         }
-        response = requests.post(url, headers=headers, json=params)
-        if response.status_code != 200:
-            return f"Error status: {response.status_code}"
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=params) as response:
+                if response.status != 200:
+                    return f"Error status: {response.status}"
 
-        if is_gemini_oracle:
-            if re_json:
-                check_response = response.json()
-            else:
-                check_response = response
-            return check_response
-        else:
-            return f"WTF THIS {self.query}"
+                if is_gemini_oracle:
+                    if re_json:
+                        check_response = await response.json()
+                    else:
+                        check_response = await response.text()
+                    return check_response
+                else:
+                    return f"WTF THIS {self.query}"
 
     def get_response_gemini_pro(
         self,
