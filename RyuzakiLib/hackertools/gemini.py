@@ -115,12 +115,12 @@ class GeminiLatest:
             response_data = response.json()
             answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
 
-        # Check if the specific string is present in the answer
-        if "I am a large language model, trained by Google." in answer:
-            # If the string is present, make a new request with a modified payload
-            headers = {"Content-Type": "application/json"}
-            payload = {"contents": [{"role": "user", "parts": [{"text": self.oracle_base}]}]}
-            response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
+            # Check if the specific string is present in the answer
+            if "I am a large language model, trained by Google." in answer:
+                # If the string is present, make a new request with a modified payload
+                headers = {"Content-Type": "application/json"}
+                payload = {"contents": [{"role": "user", "parts": [{"text": self.oracle_base}]}]}
+                response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
 
             if response.status_code != 200:
                 return "Error responding", oracle_chat
