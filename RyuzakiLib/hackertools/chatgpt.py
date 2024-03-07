@@ -51,7 +51,7 @@ class RendyDevChat:
         except FileNotFoundError:
             return set()
 
-    def get_response(
+    async def get_response(
         self,
         message,
         version: int = 3,
@@ -70,18 +70,23 @@ class RendyDevChat:
                 "chat_mode": chat_mode,
                 "dialog_messages": "[{'bot': '', 'user': ''}]",
             }
-            try:
-                response = requests.post(
-                    f"{response_url}",
-                    json=payloads,
-                    headers={"Content-Type": "application/json"},
-                ).json()
-                if not (response and "message" in response):
-                    print(response)
-                    raise ValueError("Invalid Response from Server")
-                return response.get("message")
-            except Exception as e:
-                return f"Error Api {e}"
+            async with aiohttp.ClientSession() as session:
+                try:
+                    async with session.post(
+                        f"{response_url}",
+                        json=payloads,
+                        headers={"Content-Type": "application/json"},
+                    ) as response:
+                        if response.status != 200:
+                            return f"Error status: {response.status}"
+
+                        data = await response.json()
+                        if "message" not in data:
+                            raise ValueError("Invalid Response from Server")
+
+                        return data["message"]
+                except Exception as e:
+                    return f"Error Api {e}"
         else:
             return f"WTF THIS {self.query}"
 
@@ -217,7 +222,7 @@ class RendyDevChat:
                 else:
                     return f"WTF THIS {self.query}"
 
-    def get_response_gemini_pro(
+    async def get_response_gemini_pro(
         self,
         api_key: str = None,
         user_id: int = None,
@@ -238,18 +243,25 @@ class RendyDevChat:
             "is_multi_chat": is_multi_chat,
             "gemini_api_key": gemini_api_key,
         }
-        response = requests.post(url, headers=headers, json=params)
-        if response.status_code != 200:
-            return f"Error status: {response.status_code}"
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.post(
+                    url, json=params, headers=headers
+                ) as response:
+                    if response.status != 200:
+                        return f"Error status: {response.status_code}"
 
-        if is_gemini_pro:
-            if re_json:
-                check_response = response.json()
-            else:
-                check_response = response
-            return check_response
-        else:
-            return f"WTF THIS {self.query}"
+                    data = await response.json()
+                    if is_gemini_pro:
+                        if re_json:
+                            check_response = data
+                        else:
+                            check_response = data.json()
+                        return check_response
+                    else:
+                        return f"WTF THIS {self.query}"
+            except Exception as e:
+                return f"Error: {e}"
 
     def get_response_google_ai(
         self,
