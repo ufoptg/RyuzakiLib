@@ -271,7 +271,7 @@ class RendyDevChat:
         is_google: bool = False,
     ):
         if is_chat_bison:
-            url = f"https://randydev-ryuzaki-api.hf.space/ryuzaki/v1beta2-google-ai"
+            url = f"https://ufoptg-ufop-api.hf.space/UFoP/G-AI"
         else:
             url = f"https://randydev-ryuzaki-api.hf.space/ryuzaki/google-ai"
         headers = {"accept": "application/json", "api-key": api_key}
@@ -289,14 +289,14 @@ class RendyDevChat:
         else:
             return f"WTF THIS {self.query}"
 
-    def get_risma_image_generator(self, api_key: str = None, is_opendalle: bool = False, is_dalle3xl: bool = False):
+    def get_risa_image_generator(self, api_key: str = None, is_opendalle: bool = False, is_dalle3xl: bool = False):
         if is_opendalle:
             url = f"https://randydev-ryuzaki-api.hf.space/ryuzaki/opendalle"
             headers = {"accept": "application/json", "api-key": api_key}
             payload = {"query": self.query}
             response = requests.post(url, headers=headers, json=payload)
         elif is_dalle3xl:
-            url = f"https://randydev-ryuzaki-api.hf.space/ryuzaki/dalle3xl"
+            url = f"https://ufoptg-ufop-api.hf.space/UFoP/dalle3xl"
             headers = {"accept": "application/json", "api-key": api_key}
             payload = {"query": self.query}
             response = requests.post(url, headers=headers, json=payload)
