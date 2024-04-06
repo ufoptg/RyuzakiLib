@@ -233,7 +233,7 @@ class RendyDevChat:
         is_gemini_pro: bool = False,
         gemini_api_key: str = None
     ):
-        url = f"https://randydev-ryuzaki-api.hf.space/ryuzaki/gemini-ai-pro"
+        url = f"https://ufoptg-ufop-api.hf.space/UFoP/gemini-ai-pro"
         headers = {"accept": "application/json", "api-key": api_key}
         params = {
             "query": self.query,
