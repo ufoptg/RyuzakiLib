@@ -29,7 +29,7 @@ class GeminiLatest:
         mongo_url: str=None,
         api_base="https://generativelanguage.googleapis.com",
         version: str="v1beta",
-        model: str="models/gemini-pro",
+        model: str="models/gemini-1.0-pro",
         content: str="generateContent",
         user_id: int=None,
         oracle_base: str = None,
