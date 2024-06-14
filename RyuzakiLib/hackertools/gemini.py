@@ -19,23 +19,19 @@
 
 import asyncio
 import requests
-import logging
 from pymongo import MongoClient
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 class GeminiLatest:
     def __init__(
         self,
         api_key: str = None,
-        mongo_url: str = None,
-        api_base: str = "https://generativelanguage.googleapis.com",
-        version: str = "v1beta",
-        model: str = "models/gemini-1.0-pro",
-        content: str = "generateContent",
-        user_id: int = None,
+        mongo_url: str=None,
+        api_base="https://generativelanguage.googleapis.com",
+        version: str="v1beta",
+        model: str="models/gemini-1.0-pro",
+        content: str="generateContent",
+        user_id: int=None,
         oracle_base: str = None,
     ):
         self.api_key = api_key
@@ -54,7 +50,6 @@ class GeminiLatest:
         self.client.close()
 
     async def __get_response_gemini(self, query: str = None):
-        gemini_chat = []
         try:
             gemini_chat = await self._get_gemini_chat_from_db()
             gemini_chat.append({"role": "user", "parts": [{"text": query}]})
@@ -62,9 +57,9 @@ class GeminiLatest:
             headers = {"Content-Type": "application/json"}
             payload = {"contents": gemini_chat}
             response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
+            #response = requests.post(api_method, headers=headers, json=payload)
 
             if response.status_code != 200:
-                logger.error(f"Error response: {response.status_code}, {response.text}")
                 return "Error responding", gemini_chat
 
             response_data = response.json()
@@ -74,8 +69,8 @@ class GeminiLatest:
             await self._update_gemini_chat_in_db(gemini_chat)
             return answer, gemini_chat
         except Exception as e:
-            logger.error(f"Exception in __get_response_gemini: {e}")
-            return f"Error response: {e}", gemini_chat
+            error_msg = f"Error response: {e}"
+            return error_msg, gemini_chat
 
     async def _get_gemini_chat_from_db(self):
         get_data_user = {"user_id": self.user_id}
@@ -93,11 +88,9 @@ class GeminiLatest:
     async def _clear_history_in_db(self):
         unset_clear = {"gemini_chat": None}
         return self.collection.update_one({"user_id": self.user_id}, {"$unset": unset_clear})
-
 #############################----Oracle----##################################
 
     async def __get_response_oracle(self, query: str = None):
-        oracle_chat = []
         try:
             oracle_chat = await self._get_oracle_chat_from_db()
 
@@ -114,7 +107,6 @@ class GeminiLatest:
             response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
 
             if response.status_code != 200:
-                logger.error(f"Error response: {response.status_code}, {response.text}")
                 return "Error responding", oracle_chat
 
             response_data = response.json()
@@ -126,7 +118,6 @@ class GeminiLatest:
                 response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
 
                 if response.status_code != 200:
-                    logger.error(f"Error response: {response.status_code}, {response.text}")
                     return "Error responding", oracle_chat
 
                 try:
@@ -137,16 +128,16 @@ class GeminiLatest:
                     return answer, oracle_chat
                 except Exception as e:
                     await self._clear_oracle_history_in_db()
-                    logger.error(f"Exception in nested response handling: {e}")
-                    return f"Error response: {e}", oracle_chat
+                    error_msg = f"Error response: {e}"
+                    return error_msg, oracle_chat
             else:
                 oracle_chat.append({"role": "model", "parts": [{"text": answer}]})
                 await self._update_oracle_chat_in_db(oracle_chat)
                 return answer, oracle_chat
         except Exception as e:
             await self._clear_oracle_history_in_db()
-            logger.error(f"Exception in __get_response_oracle: {e}")
-            return f"Error response: {e}", oracle_chat
+            error_msg = f"Error response: {e}"
+            return error_msg, oracle_chat
 
     async def _get_oracle_chat_from_db(self):
         get_data_user = {"user_id": 6000000 + self.user_id}
@@ -165,9 +156,11 @@ class GeminiLatest:
             try:
                 self.collection.insert_one({"user_id": 6000000 + self.user_id, "oracle_chat": self.oracle_base})
             except Exception as e:
-                logger.error(f"Exception in _set_oracle_chat_in_db: {e}")
-                return f"Error response: {e}", oracle_chat
-        return oracle_chat
+                error_msg = f"Error response: {e}"
+                return error_msg, oracle_chat
+            return None, oracle_chat
+        else:
+            return oracle_chat
 
     async def _update_oracle_chat_in_db(self, oracle_chat):
         get_data_user = {"user_id": 6000000 + self.user_id}
@@ -176,8 +169,8 @@ class GeminiLatest:
             try:
                 self.collection.update_one({"_id": document["_id"]}, {"$set": {"oracle_chat": oracle_chat}})
             except Exception as e:
-                logger.error(f"Exception in _update_oracle_chat_in_db: {e}")
-                return f"Error response: {e}", oracle_chat
+                error_msg = f"Error response: {e}"
+                return error_msg, oracle_chat
         else:
             self.collection.insert_one({"user_id": 6000000 + self.user_id, "oracle_chat": self.oracle_base})
 
