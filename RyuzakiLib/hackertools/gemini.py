@@ -19,22 +19,19 @@
 
 import asyncio
 import base64
-
 import motor.motor_asyncio
-
 from ..ultis.AsyicXSearcher import async_searcher
 
-
 class GeminiLatest:
-    def init(
+    def __init__(
         self,
         api_key: str = None,
-        mongo_url: str=None,
+        mongo_url: str = None,
         api_base="https://generativelanguage.googleapis.com",
-        version: str="v1beta",
-        model: str="models/gemini-1.5-pro",
-        content: str="generateContent",
-        user_id: int=None,
+        version: str = "v1beta",
+        model: str = "models/gemini-1.5-pro",
+        content: str = "generateContent",
+        user_id: int = None,
         oracle_base: str = None,
     ):
         self.api_key = api_key
@@ -49,10 +46,11 @@ class GeminiLatest:
         self.db = self.client.tiktokbot
         self.collection = self.db.users
 
-    def _close(self):
-        self.client.close()
+    async def _close(self):
+        await self.client.close()
 
     async def __get_response_gemini(self, query: str = None):
+        gemini_chat = []
         try:
             gemini_chat = await self._get_gemini_chat_from_db()
             gemini_chat.append({"role": "user", "parts": [{"text": query}]})
@@ -63,7 +61,6 @@ class GeminiLatest:
             response = await async_searcher.search(
                 api_method, post=True, headers=headers, json=payload, re_json=True
             )
-            # response = requests.post(api_method, headers=headers, json=payload)
 
             if "error" in response:
                 return "Error responding", gemini_chat
@@ -104,6 +101,7 @@ class GeminiLatest:
         return await self.collection.update_one(
             {"user_id": self.user_id}, {"$unset": unset_clear}
         )
+
 #############################----Oracle----##################################
 
     async def __get_response_oracle(self, query: str = None):
