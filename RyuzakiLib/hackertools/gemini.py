@@ -22,7 +22,7 @@ import base64
 
 import motor.motor_asyncio
 
-from .APIsicX import async_searcher
+from ..utilis.AsyicXSearcher import async_searcher
 
 
 class GeminiLatest:
