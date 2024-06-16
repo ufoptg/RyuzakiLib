@@ -47,6 +47,7 @@ setuptools.setup(
         "deprecation",
         "ntgcalls>=1.0.2",
         "psutil",
+        "motor",
         "screeninfo",
     ],
     classifiers=[
