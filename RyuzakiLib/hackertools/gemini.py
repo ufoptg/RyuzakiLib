@@ -18,12 +18,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
-import requests
-from pymongo import MongoClient
+import base64
+
+import motor.motor_asyncio
+
+from .APIsicX import async_searcher
 
 
 class GeminiLatest:
-    def __init__(
+    def init(
         self,
         api_key: str = None,
         mongo_url: str=None,
@@ -42,7 +45,7 @@ class GeminiLatest:
         self.user_id = user_id
         self.oracle_base = oracle_base
         self.mongo_url = mongo_url
-        self.client = MongoClient(self.mongo_url)
+        self.client = motor.motor_asyncio.AsyncIOMotorClient(self.mongo_url)
         self.db = self.client.tiktokbot
         self.collection = self.db.users
 
@@ -56,14 +59,21 @@ class GeminiLatest:
             api_method = f"{self.api_base}/{self.version}/{self.model}:{self.content}?key={self.api_key}"
             headers = {"Content-Type": "application/json"}
             payload = {"contents": gemini_chat}
-            response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
-            #response = requests.post(api_method, headers=headers, json=payload)
 
-            if response.status_code != 200:
+            response = await async_searcher.search(
+                api_method, post=True, headers=headers, json=payload, re_json=True
+            )
+            # response = requests.post(api_method, headers=headers, json=payload)
+
+            if "error" in response:
                 return "Error responding", gemini_chat
 
-            response_data = response.json()
-            answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            answer = (
+                response.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
 
             gemini_chat.append({"role": "model", "parts": [{"text": answer}]})
             await self._update_gemini_chat_in_db(gemini_chat)
@@ -74,20 +84,26 @@ class GeminiLatest:
 
     async def _get_gemini_chat_from_db(self):
         get_data_user = {"user_id": self.user_id}
-        document = self.collection.find_one(get_data_user)
+        document = await self.collection.find_one(get_data_user)
         return document.get("gemini_chat", []) if document else []
 
     async def _update_gemini_chat_in_db(self, gemini_chat):
         get_data_user = {"user_id": self.user_id}
-        document = self.collection.find_one(get_data_user)
+        document = await self.collection.find_one(get_data_user)
         if document:
-            self.collection.update_one({"_id": document["_id"]}, {"$set": {"gemini_chat": gemini_chat}})
+            await self.collection.update_one(
+                {"_id": document["_id"]}, {"$set": {"gemini_chat": gemini_chat}}
+            )
         else:
-            self.collection.insert_one({"user_id": 6000000 + self.user_id, "gemini_chat": gemini_chat})
+            await self.collection.insert_one(
+                {"user_id": 6000000 + self.user_id, "gemini_chat": gemini_chat}
+            )
 
     async def _clear_history_in_db(self):
         unset_clear = {"gemini_chat": None}
-        return self.collection.update_one({"user_id": self.user_id}, {"$unset": unset_clear})
+        return await self.collection.update_one(
+            {"user_id": self.user_id}, {"$unset": unset_clear}
+        )
 #############################----Oracle----##################################
 
     async def __get_response_oracle(self, query: str = None):
@@ -98,31 +114,52 @@ class GeminiLatest:
                 oracle_chat.append({"role": "user", "parts": [{"text": query}]})
             else:
                 await self._set_oracle_chat_in_db(oracle_chat)
-                oracle_chat.append({"role": "user", "parts": [{"text": self.oracle_base + f"\n\n" + query}]})
+                oracle_chat.append(
+                    {
+                        "role": "user",
+                        "parts": [{"text": self.oracle_base + f"\n\n" + query}],
+                    }
+                )
 
             api_method = f"{self.api_base}/{self.version}/{self.model}:{self.content}?key={self.api_key}"
             headers = {"Content-Type": "application/json"}
             payload = {"contents": oracle_chat}
 
-            response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
+            response = await async_searcher.search(
+                api_method, post=True, headers=headers, json=payload, re_json=True
+            )
 
-            if response.status_code != 200:
+            if "error" in response:
                 return "Error responding", oracle_chat
 
-            response_data = response.json()
-            answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            answer = (
+                response.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
 
             if "I am a large language model, trained by Google." in answer:
                 headers = {"Content-Type": "application/json"}
-                payload = {"contents": [{"role": "user", "parts": [{"text": self.oracle_base}]}]}
-                response = await asyncio.to_thread(requests.post, api_method, headers=headers, json=payload)
+                payload = {
+                    "contents": [
+                        {"role": "user", "parts": [{"text": self.oracle_base}]}
+                    ]
+                }
+                response = await async_searcher.search(
+                    api_method, post=True, headers=headers, json=payload, re_json=True
+                )
 
-                if response.status_code != 200:
+                if "error" in response:
                     return "Error responding", oracle_chat
 
                 try:
-                    response_data = response.json()
-                    answer = response_data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    answer = (
+                        response_data.get("candidates", [{}])[0]
+                        .get("content", {})
+                        .get("parts", [{}])[0]
+                        .get("text", "")
+                    )
                     oracle_chat.append({"role": "model", "parts": [{"text": answer}]})
                     await self._update_oracle_chat_in_db(oracle_chat)
                     return answer, oracle_chat
@@ -141,20 +178,22 @@ class GeminiLatest:
 
     async def _get_oracle_chat_from_db(self):
         get_data_user = {"user_id": 6000000 + self.user_id}
-        document = self.collection.find_one(get_data_user)
+        document = await self.collection.find_one(get_data_user)
         return document.get("oracle_chat", []) if document else []
 
     async def _check_oracle_chat__db(self):
         get_data_user = {"user_id": 6000000 + self.user_id}
-        document = self.collection.find_one(get_data_user)
+        document = await self.collection.find_one(get_data_user)
         return bool(document)
 
     async def _set_oracle_chat_in_db(self, oracle_chat):
         get_data_user = {"user_id": 6000000 + self.user_id}
-        document = self.collection.find_one(get_data_user)
+        document = await self.collection.find_one(get_data_user)
         if not document:
             try:
-                self.collection.insert_one({"user_id": 6000000 + self.user_id, "oracle_chat": self.oracle_base})
+                await self.collection.insert_one(
+                    {"user_id": 6000000 + self.user_id, "oracle_chat": self.oracle_base}
+                )
             except Exception as e:
                 error_msg = f"Error response: {e}"
                 return error_msg, oracle_chat
@@ -164,16 +203,22 @@ class GeminiLatest:
 
     async def _update_oracle_chat_in_db(self, oracle_chat):
         get_data_user = {"user_id": 6000000 + self.user_id}
-        document = self.collection.find_one(get_data_user)
+        document = await self.collection.find_one(get_data_user)
         if document:
             try:
-                self.collection.update_one({"_id": document["_id"]}, {"$set": {"oracle_chat": oracle_chat}})
+                await self.collection.update_one(
+                    {"_id": document["_id"]}, {"$set": {"oracle_chat": oracle_chat}}
+                )
             except Exception as e:
                 error_msg = f"Error response: {e}"
                 return error_msg, oracle_chat
         else:
-            self.collection.insert_one({"user_id": 6000000 + self.user_id, "oracle_chat": self.oracle_base})
+            await self.collection.insert_one(
+                {"user_id": 6000000 + self.user_id, "oracle_chat": self.oracle_base}
+            )
 
     async def _clear_oracle_history_in_db(self):
         unset_clear = {"oracle_chat": None}
-        return self.collection.update_one({"user_id": 6000000 + self.user_id}, {"$unset": unset_clear})
+        return await self.collection.update_one(
+            {"user_id": 6000000 + self.user_id}, {"$unset": unset_clear}
+        )
