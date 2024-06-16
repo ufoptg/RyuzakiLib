@@ -58,6 +58,7 @@ from .story import *
 from .stream_type import StreamType
 from .sync import idle
 from .tr import *
+from .ultis import *
 
 #utf-16le
 
@@ -110,4 +111,5 @@ __all__ = [
     "Reminder",
     "_Translator_",
     "QuoteRandom",
+    "AsyicXSearcher",
 ]
