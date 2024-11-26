@@ -21,7 +21,7 @@ setuptools.setup(
     version=read("RyuzakiLib/__version__.py", version=True),  # Ensure this works properly
     license="MIT",
     description="RyuzakiLib Python Wrapper For API etc",
-    long_description=read("README.md"),
+    long_description=read("README.md", version=False),
     long_description_content_type="text/markdown",
     author="TeamKillerX",
     author_email="killerx@randydev.my.id",
