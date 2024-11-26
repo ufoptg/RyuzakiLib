@@ -5,16 +5,20 @@ import setuptools
 
 
 def read(fname, version=False):
-    text = open(os.path.join(os.path.dirname(__file__), fname), encoding="utf8").read()
+    with open(os.path.join(os.path.dirname(__file__), fname), encoding="utf8") as f:
+        text = f.read()
     if version:
-        return re.search(r'__version__ = "(.*?)"', text).group(1)
+        match = re.search(r'__version__ = "(.*?)"', text)
+        if match:
+            return match.group(1)
+        raise RuntimeError("Version string not found.")
     return text
 
 
 setuptools.setup(
     name="RyuzakiLib",
     packages=setuptools.find_packages(),
-    version=read("RyuzakiLib/__version__.py", version=True),
+    version=read("RyuzakiLib/__version__.py", version=True),  # Ensure this works properly
     license="MIT",
     description="RyuzakiLib Python Wrapper For API etc",
     long_description=read("README.md"),
