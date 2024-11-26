@@ -24,7 +24,10 @@ from typing import Optional
 import g4f
 import openai
 import requests
-from g4f.Provider import Bard
+try:
+    from g4f.Provider import Bard
+except ImportError as e:
+    importerror = e
 from pymongo import MongoClient
 
 gpt3_conversation_history = []
