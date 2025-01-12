@@ -1,3 +1,5 @@
+THE NAMES OF THE FOLDERS AND FUNCTIONS ARE MEMES THE FUNCTIONS ARENT WHAT THRY SEE
+
 # RyuzakiLib
 
 ![pro](https://github.com/TeamKillerX/RyuzakiLib/assets/90479255/dfa2f321-9b36-4045-a321-bcfdd4366514)
