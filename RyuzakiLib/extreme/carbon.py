@@ -18,35 +18,45 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from io import BytesIO
-
-import requests
 from aiohttp import ClientSession
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-aiosession = ClientSession()
+# Lazy session - created only when first needed and inside an event loop
+_aiosession = None
+
+
+async def get_session():
+    global _aiosession
+    if _aiosession is None or _aiosession.closed:
+        _aiosession = ClientSession()
+    return _aiosession
 
 
 class CarbonSuper:
-    def __init__(
-        self,
-        code,
-        color=None,
-    ):
+    def __init__(self, code: str, color: str = None):
         self.code = code
         self.color = color
 
     async def make_carbon(self, ryuzaki: bool = None):
         url = "https://carbonara.solopov.dev/api/cook"
-        if ryuzaki:
-            async with aiosession.post(
-                url, json={"code": self.code, "backgroundColor": self.color}
-            ) as resp:
-                image = BytesIO(await resp.read())
-            image.name = "carbon.png"
-            return image
+        session = await get_session()
+
+        if ryuzaki and self.color:
+            payload = {"code": self.code, "backgroundColor": self.color}
         else:
-            async with aiosession.post(url, json={"code": self.code}) as resp:
-                image = BytesIO(await resp.read())
+            payload = {"code": self.code}
+
+        async with session.post(url, json=payload) as resp:
+            if resp.status != 200:
+                raise Exception(f"Carbon API error: {resp.status}")
+            image = BytesIO(await resp.read())
             image.name = "carbon.png"
             return image
+
+    async def close(self):
+        """Optional: call this on bot shutdown"""
+        global _aiosession
+        if _aiosession and not _aiosession.closed:
+            await _aiosession.close()
+            _aiosession = None
